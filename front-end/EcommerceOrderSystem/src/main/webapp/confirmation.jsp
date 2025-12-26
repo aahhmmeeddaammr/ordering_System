@@ -1,310 +1,71 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
-<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="E-Commerce Order System - Order Confirmation">
-    <title>TechShop - Order Confirmed</title>
+    <title>Order Success - TechShop</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/styles.css">
 </head>
 <body>
-    <!-- Header -->
     <header class="header">
-        <div class="container">
-            <div class="header-content">
-                <div class="logo">
+        <div class="container" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 0;">
+            <div class="logo">
+                <a href="${pageContext.request.contextPath}/" style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 0.5rem;">
                     <span class="logo-icon">🛒</span>
-                    <span>TechShop</span>
-                </div>
-                <nav class="nav">
-                    <a href="${pageContext.request.contextPath}/products" class="nav-link">Products</a>
-                    <a href="${pageContext.request.contextPath}/checkout" class="nav-link">Checkout</a>
-                </nav>
-                <a href="${pageContext.request.contextPath}/checkout" class="cart-badge">
-                    🛒 Cart
-                    <span class="cart-count">0</span>
+                    <span style="font-weight: 700; font-size: 1.5rem;">TechShop</span>
                 </a>
             </div>
         </div>
     </header>
 
-    <!-- Main Content -->
-    <main class="container" style="padding: 60px 24px;">
-        <!-- Success Icon -->
-        <div class="confirmation-icon">
-            ✓
-        </div>
-        
-        <h1 class="confirmation-title">Order Confirmed!</h1>
-        <p class="confirmation-subtitle">
-            Thank you for your purchase. Your order has been received and is being processed.
-        </p>
-        
-        <!-- Order Details Grid -->
-        <div class="order-details">
-            <div class="detail-card">
-                <div class="detail-label">Order ID</div>
-                <div class="detail-value">#${orderId}</div>
-            </div>
-            <div class="detail-card">
-                <div class="detail-label">Customer</div>
-                <div class="detail-value">${customerName}</div>
-            </div>
-            <div class="detail-card">
-                <div class="detail-label">Email</div>
-                <div class="detail-value">${customerEmail}</div>
-            </div>
-            <div class="detail-card">
-                <div class="detail-label">Total Amount</div>
-                <div class="detail-value" style="color: #667eea;">$<fmt:formatNumber value="${finalTotal}" pattern="0.00"/></div>
-            </div>
-        </div>
-        
-        <!-- Notification Status -->
-        <div class="card" style="max-width: 800px; margin: 0 auto 32px;">
-            <c:choose>
-                <c:when test="${notificationSent}">
-                    <div class="alert alert-success" style="margin: 0;">
-                        ✓ Order confirmation email has been sent to ${customerEmail}
+    <main class="container">
+        <div class="card mt-4 text-center">
+            <div class="confirmation-icon">✓</div>
+            <h1 class="confirmation-title">Order Successfully Placed!</h1>
+            <p class="confirmation-subtitle">Thank you for your purchase. Your order has been processed and a notification has been sent.</p>
+            
+            <div class="order-details mt-4">
+                <div class="detail-card">
+                    <div class="detail-label">Order ID</div>
+                    <div class="detail-value">#${order_id}</div>
+                </div>
+                <div class="detail-card">
+                    <div class="detail-label">Status</div>
+                    <div class="detail-value">
+                        <span class="badge badge-success">Processed</span>
                     </div>
-                </c:when>
-                <c:otherwise>
-                    <div class="alert alert-warning" style="margin: 0;">
-                        ⚠️ We couldn't send the confirmation email. Your order was still placed successfully.
-                    </div>
-                </c:otherwise>
-            </c:choose>
-        </div>
-        
-        <!-- Order Items Table -->
-        <div class="card" style="max-width: 800px; margin: 0 auto 32px;">
-            <div class="card-header">
-                <h2 class="card-title">📦 Order Items</h2>
-            </div>
-            <div id="orderItemsTable">
-                <div style="text-align: center; padding: 40px;">
-                    <div class="spinner"></div>
-                    <p style="color: var(--text-secondary); margin-top: 16px;">Loading order items from Order Service...</p>
+                </div>
+                <div class="detail-card">
+                    <div class="detail-label">Total Amount</div>
+                    <div class="detail-value">$${total_amount}</div>
+                </div>
+                <div class="detail-card">
+                    <div class="detail-label">Order Date</div>
+                    <div class="detail-value">Today</div>
                 </div>
             </div>
-        </div>
-        
-        <!-- Pricing Breakdown -->
-        <div class="card" style="max-width: 800px; margin: 0 auto 32px;">
-            <div class="card-header">
-                <h2 class="card-title">💰 Pricing Details</h2>
+
+            <div class="alert alert-success">
+                ℹ️ Loyalty points have been updated in your profile!
             </div>
-            <div id="pricingBreakdown">
-                <div class="summary-row total">
-                    <span>Total Amount</span>
-                    <span style="color: #667eea;">$<fmt:formatNumber value="${finalTotal}" pattern="0.00"/></span>
-                </div>
+
+            <div class="mt-4">
+                <a href="${pageContext.request.contextPath}/" class="btn btn-primary btn-lg">
+                    Return to Shop
+                </a>
+                <a href="${pageContext.request.contextPath}/ordersHistory?customer_id=1" class="btn btn-secondary btn-lg" style="margin-left: 1rem;">
+                    View Order History
+                </a>
             </div>
-        </div>
-        
-        <!-- Actions -->
-        <div style="text-align: center; margin-top: 40px;">
-            <a href="${pageContext.request.contextPath}/products" class="btn btn-primary btn-lg" onclick="clearCart()">
-                ← Continue Shopping
-            </a>
         </div>
     </main>
 
-    <!-- Footer -->
     <footer class="footer">
         <div class="container">
-            <p>© 2024 TechShop - E-Commerce Order Management System</p>
-            <p style="margin-top: 8px; font-size: 0.85rem;">SOA Microservices Project</p>
+            <p>© 2024 TechShop - SOA Microservices Project</p>
         </div>
     </footer>
-
-    <!-- Hidden data elements for JavaScript -->
-    <div id="serverData" style="display: none;">
-        <span id="orderIdData"><c:out value="${orderId}" default="0" /></span>
-        <span id="pricingResponseData"><c:out value="${pricingResponse}" default="{}" /></span>
-        <span id="finalTotalData"><c:out value="${finalTotal}" default="0" /></span>
-    </div>
-
-    <script>
-        // Get order ID and context path
-        var orderId = document.getElementById('orderIdData').textContent || '0';
-        var pricingResponseText = document.getElementById('pricingResponseData').textContent || '{}';
-        var serverFinalTotal = parseFloat(document.getElementById('finalTotalData').textContent) || 0;
-        
-        var pricingResponse = {};
-        try {
-            pricingResponse = JSON.parse(pricingResponseText);
-        } catch(e) {
-            console.log('Could not parse pricing response');
-        }
-        
-        // Proxy URL (Local JSP that calls the backend)
-        var ORDER_SERVICE_PROXY = '${pageContext.request.contextPath}/get_order_details.jsp';
-        
-        // Product icon mapping
-        var productIcons = {
-            'laptop': '💻',
-            'mouse': '🖱️',
-            'keyboard': '⌨️',
-            'monitor': '🖥️',
-            'headphones': '🎧',
-            'default': '📦'
-        };
-        
-        function getProductIcon(productName) {
-            if (!productName) return productIcons['default'];
-            var name = productName.toLowerCase();
-            var keys = Object.keys(productIcons);
-            for (var i = 0; i < keys.length; i++) {
-                var key = keys[i];
-                if (name.indexOf(key) !== -1) {
-                    return productIcons[key];
-                }
-            }
-            return productIcons['default'];
-        }
-        
-        function clearCart() {
-            localStorage.removeItem('cart');
-        }
-        
-        // Fetch order details from Order Service API via Proxy
-        function fetchOrderDetails() {
-            var container = document.getElementById('orderItemsTable');
-            
-            if (!orderId || orderId === '0') {
-                container.innerHTML = '<p style="color: var(--text-secondary); padding: 20px;">Order ID not available</p>';
-                return;
-            }
-            
-            // Use the proxy JSP
-            fetch(ORDER_SERVICE_PROXY + '?order_id=' + orderId)
-                .then(function(response) {
-                    return response.json();
-                })
-                .then(function(data) {
-                    if (data.success && data.products && data.products.length > 0) {
-                        renderOrderItemsFromAPI(data.products, data.total_amount);
-                    } else if (data.products && data.products.length > 0) {
-                        renderOrderItemsFromAPI(data.products, data.total_amount);
-                    } else {
-                        // Fallback to pricing response if available
-                        renderOrderItemsFromPricing();
-                    }
-                })
-                .catch(function(error) {
-                    console.error('Error fetching order details:', error);
-                    // Fallback to pricing response
-                    renderOrderItemsFromPricing();
-                });
-        }
-        
-        function renderOrderItemsFromAPI(products, totalAmount) {
-            var container = document.getElementById('orderItemsTable');
-            
-            var html = '<table class="table"><thead><tr>';
-            html += '<th>Product</th><th>Product ID</th><th>Quantity</th><th style="text-align: right;">Subtotal</th>';
-            html += '</tr></thead><tbody>';
-            
-            for (var i = 0; i < products.length; i++) {
-                var item = products[i];
-                var productName = item.product_name || ('Product #' + item.product_id);
-                var subtotal = item.subtotal || (item.unit_price * item.quantity) || 0;
-                
-                html += '<tr>';
-                html += '<td><div style="display: flex; align-items: center; gap: 12px;">';
-                html += '<span style="font-size: 1.5rem;">' + getProductIcon(productName) + '</span>';
-                html += '<span>' + productName + '</span></div></td>';
-                html += '<td>#' + item.product_id + '</td>';
-                html += '<td>' + item.quantity + '</td>';
-                html += '<td style="text-align: right; font-weight: 600;">$' + subtotal.toFixed(2) + '</td>';
-                html += '</tr>';
-            }
-            
-            html += '</tbody></table>';
-            container.innerHTML = html;
-            
-            // Update total if provided
-            if (totalAmount) {
-                updatePricingFromAPI(totalAmount);
-            }
-        }
-        
-        function renderOrderItemsFromPricing() {
-            var container = document.getElementById('orderItemsTable');
-            
-            if (pricingResponse.items && pricingResponse.items.length > 0) {
-                var html = '<table class="table"><thead><tr>';
-                html += '<th>Product</th><th>Quantity</th><th>Unit Price</th><th>Discount</th><th style="text-align: right;">Total</th>';
-                html += '</tr></thead><tbody>';
-                
-                for (var i = 0; i < pricingResponse.items.length; i++) {
-                    var item = pricingResponse.items[i];
-                    html += '<tr>';
-                    html += '<td><div style="display: flex; align-items: center; gap: 12px;">';
-                    html += '<span style="font-size: 1.5rem;">' + getProductIcon(item.product_name) + '</span>';
-                    html += '<span>' + item.product_name + '</span></div></td>';
-                    html += '<td>' + item.quantity + '</td>';
-                    html += '<td>$' + item.unit_price.toFixed(2) + '</td>';
-                    html += '<td>';
-                    if (item.discount_percentage > 0) {
-                        html += '<span class="badge badge-success">-' + item.discount_percentage + '%</span>';
-                    } else {
-                        html += '-';
-                    }
-                    html += '</td>';
-                    html += '<td style="text-align: right; font-weight: 600;">$' + item.item_total.toFixed(2) + '</td>';
-                    html += '</tr>';
-                }
-                
-                html += '</tbody></table>';
-                container.innerHTML = html;
-            } else {
-                container.innerHTML = '<p style="color: var(--text-secondary); padding: 20px;">Order items details unavailable. Please check the Order Service.</p>';
-            }
-        }
-        
-        function updatePricingFromAPI(totalAmount) {
-            var container = document.getElementById('pricingBreakdown');
-            var html = '<div class="summary-row total"><span>Total Amount</span><span style="color: #667eea;">$' + totalAmount.toFixed(2) + '</span></div>';
-            container.innerHTML = html;
-        }
-        
-        function renderPricingBreakdown() {
-            var container = document.getElementById('pricingBreakdown');
-            
-            if (pricingResponse.success) {
-                var html = '<div class="summary-row"><span>Subtotal</span><span>$' + pricingResponse.subtotal.toFixed(2) + '</span></div>';
-                
-                if (pricingResponse.total_discount > 0) {
-                    html += '<div class="summary-row discount"><span>Bulk Discount</span><span>-$' + pricingResponse.total_discount.toFixed(2) + '</span></div>';
-                }
-                
-                html += '<div class="summary-row"><span>After Discount</span><span>$' + pricingResponse.after_discount.toFixed(2) + '</span></div>';
-                html += '<div class="summary-row"><span>Tax (' + pricingResponse.tax_rate + '% - ' + pricingResponse.region + ')</span><span>$' + pricingResponse.tax_amount.toFixed(2) + '</span></div>';
-                html += '<div class="summary-row total"><span>Final Total</span><span style="color: #667eea;">$' + pricingResponse.final_total.toFixed(2) + '</span></div>';
-                
-                container.innerHTML = html;
-            }
-        }
-        
-        // Initialize when DOM is ready
-        document.addEventListener('DOMContentLoaded', function() {
-            // Clear cart after successful order
-            clearCart();
-            
-            // Fetch order details from Order Service API
-            fetchOrderDetails();
-            
-            // Render pricing breakdown from server data
-            renderPricingBreakdown();
-            
-            // Simple check to make sure the loading spinner is seen if fetch is fast
-            console.log('Fetching order details for Order ID: ' + orderId);
-        });
-    </script>
 </body>
 </html>
