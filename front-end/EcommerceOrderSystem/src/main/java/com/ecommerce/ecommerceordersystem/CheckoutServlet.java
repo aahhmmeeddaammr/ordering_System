@@ -12,9 +12,7 @@ import com.google.gson.JsonObject;
 
 import java.io.IOException;
 
-/**
- * Servlet to handle checkout page - loads products and customers
- */
+ 
 @WebServlet(name = "checkoutServlet", urlPatterns = {"/checkout"})
 public class CheckoutServlet extends HttpServlet {
     
@@ -25,7 +23,7 @@ public class CheckoutServlet extends HttpServlet {
             throws ServletException, IOException {
         
         try {
-            // Fetch all products from Inventory Service
+            
             String inventoryResponse = HttpUtil.sendGet(
                     HttpUtil.INVENTORY_SERVICE + "/api/inventory/products"
             );
@@ -51,7 +49,7 @@ public class CheckoutServlet extends HttpServlet {
             request.setAttribute("productsJson", "[]");
         }
         
-        // Fetch customers
+        
         try {
             JsonArray customers = new JsonArray();
             
@@ -70,7 +68,7 @@ public class CheckoutServlet extends HttpServlet {
                         customers.add(customerData);
                     }
                 } catch (Exception e) {
-                    // Skip this customer
+                    
                 }
             }
             
@@ -82,7 +80,7 @@ public class CheckoutServlet extends HttpServlet {
             request.setAttribute("customersJson", "[]");
         }
         
-        // Forward to checkout.jsp
+        
         request.getRequestDispatcher("/checkout.jsp").forward(request, response);
     }
 }

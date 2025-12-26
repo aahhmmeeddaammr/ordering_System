@@ -12,10 +12,7 @@ import com.google.gson.JsonObject;
 
 import java.io.IOException;
 
-/**
- * Servlet to handle order creation
- * Creates order via Order Service, then triggers notification
- */
+ 
 @WebServlet(name = "orderServlet", urlPatterns = {"/submitOrder"})
 public class OrderServlet extends HttpServlet {
     
@@ -24,7 +21,7 @@ public class OrderServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
-        // Redirect GET requests to checkout page
+        
         response.sendRedirect(request.getContextPath() + "/checkout");
     }
     
@@ -33,14 +30,14 @@ public class OrderServlet extends HttpServlet {
             throws ServletException, IOException {
         
         try {
-            // Get form parameters
+            
             String customerId = request.getParameter("customer_id");
             String[] productIds = request.getParameterValues("product_id");
             String[] quantities = request.getParameterValues("quantity");
             String totalAmount = request.getParameter("total_amount");
             String region = request.getParameter("region");
             
-            // Validate required fields
+            
             if (customerId == null || customerId.isEmpty()) {
                 request.setAttribute("error", "Please select a customer");
                 request.getRequestDispatcher("/checkout").forward(request, response);
@@ -53,7 +50,7 @@ public class OrderServlet extends HttpServlet {
                 return;
             }
             
-            // Build products array
+            
             JsonArray products = new JsonArray();
             for (int i = 0; i < productIds.length; i++) {
                 if (productIds[i] != null && !productIds[i].isEmpty()) {
@@ -81,7 +78,7 @@ public class OrderServlet extends HttpServlet {
                 return;
             }
             
-            // First, calculate pricing
+            
             JsonObject pricingRequest = new JsonObject();
             pricingRequest.add("products", products);
             pricingRequest.addProperty("region", region != null ? region : "Egypt");
@@ -100,13 +97,13 @@ public class OrderServlet extends HttpServlet {
                 finalTotal = Double.parseDouble(totalAmount);
             }
             
-            // Build order request
+            
             JsonObject orderRequest = new JsonObject();
             orderRequest.addProperty("customer_id", Integer.parseInt(customerId));
             orderRequest.add("products", products);
             orderRequest.addProperty("total_amount", finalTotal);
             
-            // Call Order Service
+            
             String orderResponseStr = HttpUtil.sendPost(
                     HttpUtil.ORDER_SERVICE + "/api/orders/create",
                     gson.toJson(orderRequest)
@@ -117,7 +114,25 @@ public class OrderServlet extends HttpServlet {
             if (orderResponse.has("success") && orderResponse.get("success").getAsBoolean()) {
                 int orderId = orderResponse.get("order_id").getAsInt();
                 
-                // Send notification
+                
+                for (int i = 0; i < products.size(); i++) {
+                    JsonObject product = products.get(i).getAsJsonObject();
+                    int productId = product.get("product_id").getAsInt();
+                    int qty = product.get("quantity").getAsInt();
+                    
+                    try {
+                        JsonObject inventoryUpdate = new JsonObject();
+                        inventoryUpdate.addProperty("product_id", productId);
+                        inventoryUpdate.addProperty("quantity", qty);
+                        
+                        HttpUtil.sendPut(
+                                HttpUtil.INVENTORY_SERVICE + "/api/inventory/update",
+                                gson.toJson(inventoryUpdate)
+                        );
+                    } catch (Exception e) {
+                        
+                    }
+                }
                 JsonObject notificationRequest = new JsonObject();
                 notificationRequest.addProperty("order_id", orderId);
                 notificationRequest.addProperty("notification_type", "order_confirmation");
@@ -133,17 +148,34 @@ public class OrderServlet extends HttpServlet {
                     notificationSent = notificationResponse.has("success") && 
                             notificationResponse.get("success").getAsBoolean();
                 } catch (Exception e) {
-                    // Notification failed but order was created
+                    
                     notificationSent = false;
                 }
                 
-                // Get customer details for confirmation page
+                
+                int pointsToAdd = (int) Math.floor(finalTotal / 10);
+                if (pointsToAdd > 0) {
+                    try {
+                        JsonObject loyaltyRequest = new JsonObject();
+                        loyaltyRequest.addProperty("points", pointsToAdd);
+                        
+                        HttpUtil.sendPut(
+                                HttpUtil.CUSTOMER_SERVICE + "/api/customers/" + customerId + "/loyalty",
+                                gson.toJson(loyaltyRequest)
+                        );
+                    } catch (Exception e) {
+                        
+                        
+                    }
+                }
+                
+                
                 String customerResponseStr = HttpUtil.sendGet(
                         HttpUtil.CUSTOMER_SERVICE + "/api/customers/" + customerId
                 );
                 JsonObject customerResponse = gson.fromJson(customerResponseStr, JsonObject.class);
                 
-                // Set attributes for confirmation page
+                
                 request.setAttribute("orderId", orderId);
                 request.setAttribute("orderResponse", orderResponse.toString());
                 request.setAttribute("pricingResponse", pricingResponse.toString());
@@ -157,7 +189,7 @@ public class OrderServlet extends HttpServlet {
                 request.setAttribute("timestamp", orderResponse.has("timestamp") ? 
                         orderResponse.get("timestamp").getAsString() : "");
                 
-                // Forward to confirmation page
+                
                 request.getRequestDispatcher("/confirmation.jsp").forward(request, response);
                 
             } else {

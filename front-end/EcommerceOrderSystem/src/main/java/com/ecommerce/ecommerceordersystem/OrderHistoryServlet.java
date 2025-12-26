@@ -8,18 +8,12 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
-/**
- * Scenario-3: Order History
- * Fetches order history from Customer Service and details from Order Service
- */
-@WebServlet(name = "orderHistoryServlet", urlPatterns = {"/ordersHistory"})
+ 
+@WebServlet(name = "orderHistoryServlet", urlPatterns = {"/orders"})
 public class OrderHistoryServlet extends HttpServlet {
     
     private final Gson gson = new Gson();
@@ -28,50 +22,120 @@ public class OrderHistoryServlet extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
         
-        String customerId = request.getParameter("customer_id");
-        if (customerId == null || customerId.isEmpty()) {
-            customerId = "1"; // Default for demo
+        
+        String customerIdParam = request.getParameter("customer_id");
+        int customerId = 1; 
+        
+        if (customerIdParam != null && !customerIdParam.isEmpty()) {
+            try {
+                customerId = Integer.parseInt(customerIdParam);
+            } catch (NumberFormatException e) {
+                customerId = 1;
+            }
         }
         
+        request.setAttribute("customerId", customerId);
+        
         try {
-            // 1. Get orders history from Customer Service
-            String historyResponseStr = HttpUtil.sendGet(
+            
+            String customerResponse = HttpUtil.sendGet(
+                    HttpUtil.CUSTOMER_SERVICE + "/api/customers/" + customerId
+            );
+            JsonObject customerJson = gson.fromJson(customerResponse, JsonObject.class);
+            
+            if (customerJson.has("success") && customerJson.get("success").getAsBoolean()) {
+                request.setAttribute("customerName", 
+                        customerJson.has("name") ? customerJson.get("name").getAsString() : "Unknown");
+            } else {
+                request.setAttribute("customerName", "Unknown");
+            }
+            
+            
+            String ordersResponse = HttpUtil.sendGet(
                     HttpUtil.CUSTOMER_SERVICE + "/api/customers/" + customerId + "/orders"
             );
-            JsonObject historyResponse = gson.fromJson(historyResponseStr, JsonObject.class);
             
-            if (historyResponse.get("success").getAsBoolean()) {
-                JsonArray ordersBrief = historyResponse.getAsJsonArray("orders");
-                JsonArray detailedOrders = new JsonArray();
+            JsonObject ordersJson = gson.fromJson(ordersResponse, JsonObject.class);
+            
+            if (ordersJson.has("success") && ordersJson.get("success").getAsBoolean()) {
+                JsonArray orders = ordersJson.getAsJsonArray("orders");
                 
-                // 2. For each order, get full details from Order Service
-                for (JsonElement element : ordersBrief) {
-                    int orderId = element.getAsJsonObject().get("order_id").getAsInt();
+                
+                JsonArray enrichedOrders = new JsonArray();
+                
+                for (int i = 0; i < orders.size(); i++) {
+                    JsonObject order = orders.get(i).getAsJsonObject();
+                    int orderId = order.get("order_id").getAsInt();
                     
                     try {
-                        String detailsResponseStr = HttpUtil.sendGet(
+                        
+                        String orderDetailResponse = HttpUtil.sendGet(
                                 HttpUtil.ORDER_SERVICE + "/api/orders/" + orderId
                         );
-                        JsonObject detailsResponse = gson.fromJson(detailsResponseStr, JsonObject.class);
-                        if (detailsResponse.get("success").getAsBoolean()) {
-                            detailedOrders.add(detailsResponse);
+                        
+                        JsonObject orderDetail = gson.fromJson(orderDetailResponse, JsonObject.class);
+                        
+                        if (orderDetail.has("success") && orderDetail.get("success").getAsBoolean()) {
+                            
+                            JsonObject enrichedOrder = new JsonObject();
+                            enrichedOrder.addProperty("order_id", orderId);
+                            enrichedOrder.addProperty("order_date", 
+                                    order.has("order_date") ? order.get("order_date").getAsString() : "");
+                            enrichedOrder.addProperty("status", 
+                                    order.has("status") ? order.get("status").getAsString() : "unknown");
+                            enrichedOrder.addProperty("total_amount", 
+                                    orderDetail.has("total_amount") ? orderDetail.get("total_amount").getAsDouble() : 0);
+                            
+                            
+                            if (orderDetail.has("items")) {
+                                enrichedOrder.add("products", orderDetail.getAsJsonArray("items"));
+                            } else if (orderDetail.has("products")) {
+                                enrichedOrder.add("products", orderDetail.getAsJsonArray("products"));
+                            } else {
+                                enrichedOrder.add("products", new JsonArray());
+                            }
+                            
+                            enrichedOrders.add(enrichedOrder);
+                        } else {
+                            
+                            enrichedOrders.add(order);
                         }
                     } catch (Exception e) {
-                        // If detail fetch fails, at least show the brief info
-                        detailedOrders.add(element);
+                        
+                        enrichedOrders.add(order);
                     }
                 }
                 
-                request.setAttribute("orders", detailedOrders);
-                request.getRequestDispatcher("/View_orders_history.jsp").forward(request, response);
+                request.setAttribute("orders", enrichedOrders);
+                request.setAttribute("ordersJson", enrichedOrders.toString());
+                request.setAttribute("orderCount", enrichedOrders.size());
             } else {
-                request.setAttribute("error", "No order history found for this customer.");
-                request.getRequestDispatcher("/index.jsp").forward(request, response);
+                request.setAttribute("orders", new JsonArray());
+                request.setAttribute("ordersJson", "[]");
+                request.setAttribute("orderCount", 0);
+                
+                if (ordersJson.has("error")) {
+                    request.setAttribute("error", ordersJson.get("error").getAsString());
+                }
             }
             
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            request.setAttribute("error", "Service communication interrupted");
+            setDefaultAttributes(request);
         } catch (Exception e) {
-            request.setAttribute("error", "Error loading order history: " + e.getMessage());
-            request.getRequestDispatcher("/index.jsp").forward(request, response);
+            request.setAttribute("error", "Unable to connect to services: " + e.getMessage());
+            setDefaultAttributes(request);
         }
+        
+        
+        request.getRequestDispatcher("/view_orders_history.jsp").forward(request, response);
+    }
+    
+    private void setDefaultAttributes(HttpServletRequest request) {
+        request.setAttribute("customerName", "Unknown");
+        request.setAttribute("orders", new JsonArray());
+        request.setAttribute("ordersJson", "[]");
+        request.setAttribute("orderCount", 0);
     }
 }

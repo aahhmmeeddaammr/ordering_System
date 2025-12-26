@@ -5,77 +5,167 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>User Profile - TechShop</title>
+    <meta name="description" content="E-Commerce Order System - Customer Profile">
+    <title>TechShop - My Profile</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/styles.css">
 </head>
 <body>
+    
     <header class="header">
-        <div class="container" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 0;">
-            <div class="logo">
-                <a href="${pageContext.request.contextPath}/" style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 0.5rem;">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
                     <span class="logo-icon">🛒</span>
-                    <span style="font-weight: 700; font-size: 1.5rem;">TechShop</span>
+                    <span>TechShop</span>
+                </div>
+                <nav class="nav">
+                    <a href="${pageContext.request.contextPath}/products" class="nav-link">Products</a>
+                    <a href="${pageContext.request.contextPath}/checkout" class="nav-link">Checkout</a>
+                    <a href="${pageContext.request.contextPath}/profile" class="nav-link active">Profile</a>
+                    <a href="${pageContext.request.contextPath}/orders" class="nav-link">Order History</a>
+                </nav>
+                <a href="${pageContext.request.contextPath}/checkout" class="cart-badge">
+                    🛒 Cart
+                    <span class="cart-count">0</span>
                 </a>
             </div>
-            <nav class="nav">
-                <a href="${pageContext.request.contextPath}/products" class="nav-link">Products</a>
-                <a href="${pageContext.request.contextPath}/profile?customer_id=1" class="nav-link active">Profile</a>
-                <a href="${pageContext.request.contextPath}/ordersHistory?customer_id=1" class="nav-link">Orders History</a>
-            </nav>
         </div>
     </header>
 
-    <main class="container">
-        <h1 class="page-title">Scenario-2: Customer Profile</h1>
+    
+    <main class="container" style="padding: 60px 24px;">
+        <h1 class="page-title">👤 My Profile</h1>
         
-        <div class="card" style="max-width: 800px; margin: 0 auto;">
-            <div class="card-header text-center">
-                <div style="font-size: 5rem; margin-bottom: 1rem;">👤</div>
-                <h2 class="card-title">${customer.get('name').getAsString()}</h2>
-                <p style="color: var(--text-secondary);">${customer.get('email').getAsString()}</p>
+        
+        <c:if test="${not empty error}">
+            <div class="alert alert-error">
+                ⚠️ ${error}
             </div>
-            
-            <div class="order-details mt-4">
-                <div class="detail-card">
-                    <div class="detail-label">Customer ID</div>
-                    <div class="detail-value">#${customer.get('customer_id').getAsInt()}</div>
-                </div>
-                <div class="detail-card">
-                    <div class="detail-label">Member Status</div>
-                    <div class="detail-value">
-                        <c:choose>
-                            <c:when test="${customer.get('loyalty_points').getAsInt() > 100}">
-                                <span class="badge badge-success">Gold Member</span>
-                            </c:when>
-                            <c:otherwise>
-                                <span class="badge badge-info">Regular Member</span>
-                            </c:otherwise>
-                        </c:choose>
-                    </div>
-                </div>
-                <div class="detail-card" style="grid-column: span 2;">
-                    <div class="detail-label">Loyalty Rewards</div>
-                    <div class="detail-value" style="font-size: 2rem; color: #f2c94c;">
-                        ✨ ${customer.get('loyalty_points').getAsInt()} Points
-                    </div>
-                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem;">
-                        You earn 1 point for every $10 spent.
-                    </p>
+        </c:if>
+        
+        
+        <div class="order-details" style="max-width: 800px;">
+            <div class="detail-card">
+                <div class="detail-label">Customer ID</div>
+                <div class="detail-value">#${customerId}</div>
+            </div>
+            <div class="detail-card">
+                <div class="detail-label">Name</div>
+                <div class="detail-value">${customerName}</div>
+            </div>
+            <div class="detail-card">
+                <div class="detail-label">Email</div>
+                <div class="detail-value">${customerEmail}</div>
+            </div>
+            <div class="detail-card">
+                <div class="detail-label">Phone</div>
+                <div class="detail-value">
+                    <c:choose>
+                        <c:when test="${not empty customerPhone}">${customerPhone}</c:when>
+                        <c:otherwise>Not provided</c:otherwise>
+                    </c:choose>
                 </div>
             </div>
-
-            <div class="mt-4 text-center">
-                <a href="${pageContext.request.contextPath}/ordersHistory?customer_id=${customer.get('customer_id').getAsInt()}" class="btn btn-primary">
-                    View My Orders
+        </div>
+        
+        
+        <div class="card" style="max-width: 800px; margin-top: 32px;">
+            <div class="card-header">
+                <h2 class="card-title">🏆 Loyalty Program</h2>
+            </div>
+            <div style="display: flex; align-items: center; gap: 24px;">
+                <div class="confirmation-icon" style="width: 80px; height: 80px; font-size: 2rem; margin: 0; background: var(--warning-gradient);">
+                    ⭐
+                </div>
+                <div>
+                    <div style="font-size: 2.5rem; font-weight: 700; color: #f2c94c;">
+                        ${loyaltyPoints}
+                    </div>
+                    <div style="color: var(--text-secondary);">Loyalty Points</div>
+                </div>
+            </div>
+            <div class="alert alert-info" style="margin-top: 24px; margin-bottom: 0;">
+                ℹ️ Earn 1 loyalty point for every $10 spent. Points can be redeemed for discounts on future orders!
+            </div>
+        </div>
+        
+        
+        <c:if test="${not empty createdAt}">
+            <div class="card" style="max-width: 800px; margin-top: 32px;">
+                <div style="display: flex; align-items: center; gap: 16px;">
+                    <span style="font-size: 2rem;">📅</span>
+                    <div>
+                        <div style="color: var(--text-secondary); font-size: 0.85rem;">Member Since</div>
+                        <div style="font-weight: 600;">${createdAt}</div>
+                    </div>
+                </div>
+            </div>
+        </c:if>
+        
+        
+        <div class="card" style="max-width: 800px; margin-top: 32px;">
+            <div class="card-header">
+                <h2 class="card-title">🔗 Quick Links</h2>
+            </div>
+            <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+                <a href="${pageContext.request.contextPath}/orders?customer_id=${customerId}" class="btn btn-primary">
+                    📋 View Order History
+                </a>
+                <a href="${pageContext.request.contextPath}/products" class="btn btn-secondary">
+                    🛒 Continue Shopping
                 </a>
             </div>
         </div>
+        
+        
+        <div class="card" style="max-width: 800px; margin-top: 32px;">
+            <div class="card-header">
+                <h2 class="card-title">🔄 Switch Customer (Demo)</h2>
+            </div>
+            <form action="${pageContext.request.contextPath}/profile" method="GET">
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label class="form-label" for="customer_id">Select Customer</label>
+                    <select name="customer_id" id="customer_id" class="form-control">
+                        <option value="1" ${customerId == 1 ? 'selected' : ''}>Ahmed Hassan</option>
+                        <option value="2" ${customerId == 2 ? 'selected' : ''}>Sara Mohamed</option>
+                        <option value="3" ${customerId == 3 ? 'selected' : ''}>Omar Ali</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-secondary">
+                    View Profile
+                </button>
+            </form>
+        </div>
     </main>
 
+    
     <footer class="footer">
         <div class="container">
-            <p>© 2024 TechShop - SOA Microservices Project</p>
+            <p>© 2024 TechShop - E-Commerce Order Management System</p>
+            <p style="margin-top: 8px; font-size: 0.85rem;">SOA Microservices Project</p>
         </div>
     </footer>
+    
+    <script>
+        
+        function updateCartBadge() {
+            var cart = [];
+            try {
+                cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            } catch(e) {
+                cart = [];
+            }
+            var totalItems = 0;
+            for (var i = 0; i < cart.length; i++) {
+                totalItems += cart[i].quantity;
+            }
+            var badge = document.querySelector('.cart-count');
+            if (badge) {
+                badge.textContent = totalItems;
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', updateCartBadge);
+    </script>
 </body>
 </html>

@@ -13,10 +13,7 @@ import com.google.gson.JsonObject;
 import java.io.IOException;
 import java.io.PrintWriter;
 
-/**
- * Servlet to fetch customers from Customer Service
- * Provides both page forwarding and JSON API endpoints
- */
+ 
 @WebServlet(name = "customerServlet", urlPatterns = {"/customers", "/api/customers"})
 public class CustomerServlet extends HttpServlet {
     
@@ -28,11 +25,11 @@ public class CustomerServlet extends HttpServlet {
         
         String pathInfo = request.getServletPath();
         
-        // API endpoint - return JSON
+        
         if (pathInfo.startsWith("/api")) {
             handleApiRequest(request, response);
         } else {
-            // Page request - forward to JSP
+            
             handlePageRequest(request, response);
         }
     }
@@ -47,14 +44,14 @@ public class CustomerServlet extends HttpServlet {
         
         try {
             if (customerId != null) {
-                // Get specific customer
+                
                 String customerResponse = HttpUtil.sendGet(
                         HttpUtil.CUSTOMER_SERVICE + "/api/customers/" + customerId
                 );
                 out.print(customerResponse);
             } else {
-                // Return list of sample customers (fetched individually)
-                // In a real app, you'd have a /api/customers endpoint
+                
+                
                 JsonArray customers = new JsonArray();
                 
                 for (int i = 1; i <= 3; i++) {
@@ -72,7 +69,7 @@ public class CustomerServlet extends HttpServlet {
                             customers.add(customerData);
                         }
                     } catch (Exception e) {
-                        // Skip this customer if there's an error
+                        
                     }
                 }
                 
@@ -98,7 +95,7 @@ public class CustomerServlet extends HttpServlet {
     private void handlePageRequest(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
         try {
-            // Fetch customers for the page
+            
             JsonArray customers = new JsonArray();
             
             for (int i = 1; i <= 3; i++) {
@@ -116,7 +113,7 @@ public class CustomerServlet extends HttpServlet {
                         customers.add(customerData);
                     }
                 } catch (Exception e) {
-                    // Skip this customer if there's an error
+                    
                 }
             }
             

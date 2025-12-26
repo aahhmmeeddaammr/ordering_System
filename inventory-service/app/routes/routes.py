@@ -25,7 +25,7 @@ def register_routes(app):
                 }), 400
             
             product_id = data.get("product_id")
-            quantity = data.get("quantity")  # Quantity to deduct
+            quantity = data.get("quantity")  
             
             result = update_inventory(product_id, quantity)
             

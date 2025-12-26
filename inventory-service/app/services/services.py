@@ -71,7 +71,7 @@ def update_inventory(product_id, quantity):
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
         
-        # Check current quantity
+        
         cursor.execute(
             "SELECT quantity_available FROM inventory WHERE product_id = %s",
             (product_id,)
@@ -87,14 +87,14 @@ def update_inventory(product_id, quantity):
                 "error": f"Insufficient stock. Available: {product['quantity_available']}, Requested: {quantity}"
             }
         
-        # Update inventory
+        
         cursor.execute(
             "UPDATE inventory SET quantity_available = quantity_available - %s WHERE product_id = %s",
             (quantity, product_id)
         )
         conn.commit()
         
-        # Get updated inventory
+        
         cursor.execute(
             "SELECT quantity_available FROM inventory WHERE product_id = %s",
             (product_id,)

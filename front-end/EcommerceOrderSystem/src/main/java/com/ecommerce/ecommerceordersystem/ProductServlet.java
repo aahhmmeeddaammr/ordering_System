@@ -12,9 +12,7 @@ import com.google.gson.JsonObject;
 
 import java.io.IOException;
 
-/**
- * Servlet to fetch and display products from the Inventory Service
- */
+ 
 @WebServlet(name = "productServlet", urlPatterns = {"/products", ""})
 public class ProductServlet extends HttpServlet {
     
@@ -24,7 +22,7 @@ public class ProductServlet extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
         try {
-            // Fetch all products from Inventory Service
+            
             String inventoryResponse = HttpUtil.sendGet(
                     HttpUtil.INVENTORY_SERVICE + "/api/inventory/products"
             );
@@ -52,7 +50,7 @@ public class ProductServlet extends HttpServlet {
             request.setAttribute("productsJson", "[]");
         }
         
-        // Forward to index.jsp
+        
         request.getRequestDispatcher("/index.jsp").forward(request, response);
     }
 }

@@ -5,7 +5,7 @@
          version="6.0"
          metadata-complete="false">
     
-    <!-- Product Servlet -->
+
     <servlet>
         <servlet-name>productServlet</servlet-name>
         <servlet-class>com.ecommerce.ecommerceordersystem.ProductServlet</servlet-class>
@@ -15,7 +15,7 @@
         <url-pattern>/products</url-pattern>
     </servlet-mapping>
     
-    <!-- Checkout Servlet -->
+
     <servlet>
         <servlet-name>checkoutServlet</servlet-name>
         <servlet-class>com.ecommerce.ecommerceordersystem.CheckoutServlet</servlet-class>
@@ -25,7 +25,7 @@
         <url-pattern>/checkout</url-pattern>
     </servlet-mapping>
     
-    <!-- Order Servlet (submitOrder) -->
+
     <servlet>
         <servlet-name>orderServlet</servlet-name>
         <servlet-class>com.ecommerce.ecommerceordersystem.OrderServlet</servlet-class>
@@ -35,7 +35,7 @@
         <url-pattern>/submitOrder</url-pattern>
     </servlet-mapping>
     
-    <!-- Pricing Servlet -->
+
     <servlet>
         <servlet-name>pricingServlet</servlet-name>
         <servlet-class>com.ecommerce.ecommerceordersystem.PricingServlet</servlet-class>
@@ -45,7 +45,7 @@
         <url-pattern>/api/pricing</url-pattern>
     </servlet-mapping>
     
-    <!-- Customer Servlet -->
+
     <servlet>
         <servlet-name>customerServlet</servlet-name>
         <servlet-class>com.ecommerce.ecommerceordersystem.CustomerServlet</servlet-class>
@@ -55,14 +55,6 @@
         <url-pattern>/api/customers/*</url-pattern>
     </servlet-mapping>
     
-    <!-- Test Servlet -->
-    <servlet>
-        <servlet-name>testServlet</servlet-name>
-        <servlet-class>com.ecommerce.ecommerceordersystem.TestServlet</servlet-class>
-    </servlet>
-    <servlet-mapping>
-        <servlet-name>testServlet</servlet-name>
-        <url-pattern>/test</url-pattern>
-    </servlet-mapping>
+
     
 </web-app>

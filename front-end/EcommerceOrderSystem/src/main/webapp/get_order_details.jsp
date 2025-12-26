@@ -3,8 +3,8 @@
 <%@ page import="com.google.gson.Gson" %>
 <%@ page import="com.google.gson.JsonObject" %>
 <%
-    // Proxy to fetch order details from the backend Order Service
-    // This avoids CORS issues by making the request server-side
+    
+    
     
     String orderId = request.getParameter("order_id");
     
@@ -15,12 +15,12 @@
     }
     
     try {
-        // Call the Order Service
+        
         String orderResponse = HttpUtil.sendGet(
                 HttpUtil.ORDER_SERVICE + "/api/orders/" + orderId
         );
         
-        // Return the response directly
+        
         out.print(orderResponse);
         
     } catch (Exception e) {

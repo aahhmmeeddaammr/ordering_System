@@ -39,7 +39,7 @@ def get_customer_order_history(customer_id):
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
         
-        # Verify customer exists first
+        
         cursor.execute(
             "SELECT customer_id, name, email FROM customers WHERE customer_id = %s",
             (customer_id,)
@@ -49,7 +49,7 @@ def get_customer_order_history(customer_id):
         if not customer:
             return {"success": False, "error": f"Customer {customer_id} not found"}
         
-        # Call Order Service to get order history
+        
         try:
             order_service_url = os.getenv("ORDER_URL", "http://localhost:5001")
             response = requests.get(
@@ -98,7 +98,7 @@ def update_loyalty_points(customer_id, points):
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
         
-        # Verify customer exists
+        
         cursor.execute(
             "SELECT customer_id, loyalty_points FROM customers WHERE customer_id = %s",
             (customer_id,)
@@ -108,10 +108,10 @@ def update_loyalty_points(customer_id, points):
         if not customer:
             return {"success": False, "error": f"Customer {customer_id} not found"}
         
-        # Update loyalty points (can be positive or negative)
+        
         new_points = customer["loyalty_points"] + points
         
-        # Ensure loyalty points don't go below zero
+        
         new_points = max(0, new_points)
         
         cursor.execute(

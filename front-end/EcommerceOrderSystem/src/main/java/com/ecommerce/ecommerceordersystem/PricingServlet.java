@@ -13,10 +13,7 @@ import com.google.gson.JsonObject;
 import java.io.IOException;
 import java.io.PrintWriter;
 
-/**
- * Servlet to calculate pricing via Pricing Service
- * Used for AJAX requests from checkout page
- */
+ 
 @WebServlet(name = "pricingServlet", urlPatterns = {"/api/pricing"})
 public class PricingServlet extends HttpServlet {
     
@@ -30,7 +27,7 @@ public class PricingServlet extends HttpServlet {
         PrintWriter out = response.getWriter();
         
         try {
-            // Read the request body
+            
             StringBuilder sb = new StringBuilder();
             String line;
             while ((line = request.getReader().readLine()) != null) {
@@ -38,16 +35,16 @@ public class PricingServlet extends HttpServlet {
             }
             String requestBody = sb.toString();
             
-            // Parse the request
+            
             JsonObject requestJson = gson.fromJson(requestBody, JsonObject.class);
             
-            // Build pricing request
+            
             JsonObject pricingRequest = new JsonObject();
             pricingRequest.add("products", requestJson.getAsJsonArray("products"));
             pricingRequest.addProperty("region", 
                     requestJson.has("region") ? requestJson.get("region").getAsString() : "Egypt");
             
-            // Call Pricing Service
+            
             String pricingResponse = HttpUtil.sendPost(
                     HttpUtil.PRICING_SERVICE + "/api/pricing/calculate",
                     gson.toJson(pricingRequest)

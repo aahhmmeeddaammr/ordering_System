@@ -9,12 +9,12 @@ def create_order(customer_id, products, total_amount):
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
         
-        # Validate customer exists
+        
         cursor.execute("SELECT customer_id FROM customers WHERE customer_id = %s", (customer_id,))
         if not cursor.fetchone():
             return {"success": False, "error": f"Customer {customer_id} not found"}
         
-        # Generate unique order ID and create order
+        
         cursor.execute(
             "INSERT INTO orders (customer_id, total_amount, status) VALUES (%s, %s, %s)",
             (customer_id, total_amount, "pending")
@@ -23,12 +23,12 @@ def create_order(customer_id, products, total_amount):
         
         order_id = cursor.lastrowid
         
-        # Add order items
+        
         for product in products:
             product_id = product.get("product_id")
             quantity = product.get("quantity")
             
-            # Get product price from inventory service
+            
             try:
                 inventory_url = os.getenv("INVENTORY_URL", "http://localhost:5002")
                 response = requests.get(
@@ -44,7 +44,7 @@ def create_order(customer_id, products, total_amount):
             except:
                 unit_price = 0
             
-            # Insert order item
+            
             cursor.execute(
                 "INSERT INTO order_items (order_id, product_id, quantity, unit_price) VALUES (%s, %s, %s, %s)",
                 (order_id, product_id, quantity, unit_price)
@@ -76,19 +76,45 @@ def get_order_details(order_id):
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
         
-        # Get order details
+        
         cursor.execute("SELECT * FROM orders WHERE order_id = %s", (order_id,))
         order = cursor.fetchone()
         
         if not order:
             return {"success": False, "error": "Order not found"}
         
-        # Get order items
+        
         cursor.execute(
             "SELECT order_item_id, product_id, quantity, unit_price FROM order_items WHERE order_id = %s",
             (order_id,)
         )
         items = cursor.fetchall()
+        
+        
+        enriched_items = []
+        inventory_url = os.getenv("INVENTORY_URL", "http://localhost:5002")
+        
+        for item in items:
+            product_name = f"Product #{item['product_id']}"  
+            try:
+                response = requests.get(
+                    f"{inventory_url}/api/inventory/check/{item['product_id']}",
+                    timeout=5
+                )
+                if response.ok:
+                    inventory_data = response.json()
+                    if inventory_data.get("success"):
+                        product_name = inventory_data.get("product_name", product_name)
+            except:
+                pass  
+            
+            enriched_items.append({
+                "item_id": item["order_item_id"],
+                "product_id": item["product_id"],
+                "product_name": product_name,
+                "quantity": item["quantity"],
+                "unit_price": float(item["unit_price"])
+            })
         
         return {
             "success": True,
@@ -97,15 +123,7 @@ def get_order_details(order_id):
             "total_amount": float(order["total_amount"]),
             "status": order["status"],
             "order_date": str(order["order_date"]),
-            "items": [
-                {
-                    "item_id": item["order_item_id"],
-                    "product_id": item["product_id"],
-                    "quantity": item["quantity"],
-                    "unit_price": float(item["unit_price"])
-                }
-                for item in items
-            ] if items else []
+            "items": enriched_items
         }
     
     except Exception as e:
