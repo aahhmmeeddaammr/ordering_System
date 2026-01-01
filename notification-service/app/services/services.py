@@ -13,11 +13,11 @@ def send_order_notification(order_id, notification_type="order_confirmation"):
             order_service_url = os.getenv("ORDER_URL", "http://localhost:5001")
             order_response = requests.get(
                 f"{order_service_url}/api/orders/{order_id}",
-                timeout=5
+                timeout=10
             )
             
             if not order_response.ok:
-                return {"success": False, "error": f"Order {order_id} not found"}
+                return {"success": False, "error": f"Order {order_id} not found (HTTP {order_response.status_code})"}
             
             order_data = order_response.json()
             customer_id = order_data.get("customer_id")

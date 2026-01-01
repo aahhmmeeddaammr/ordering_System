@@ -106,11 +106,9 @@ public class OrderHistoryServlet extends HttpServlet {
                     }
                 }
                 
-                request.setAttribute("orders", enrichedOrders);
                 request.setAttribute("ordersJson", enrichedOrders.toString());
                 request.setAttribute("orderCount", enrichedOrders.size());
             } else {
-                request.setAttribute("orders", new JsonArray());
                 request.setAttribute("ordersJson", "[]");
                 request.setAttribute("orderCount", 0);
                 
@@ -134,7 +132,6 @@ public class OrderHistoryServlet extends HttpServlet {
     
     private void setDefaultAttributes(HttpServletRequest request) {
         request.setAttribute("customerName", "Unknown");
-        request.setAttribute("orders", new JsonArray());
         request.setAttribute("ordersJson", "[]");
         request.setAttribute("orderCount", 0);
     }

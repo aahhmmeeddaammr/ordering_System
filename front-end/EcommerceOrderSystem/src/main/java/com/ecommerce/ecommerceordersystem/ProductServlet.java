@@ -31,22 +31,18 @@ public class ProductServlet extends HttpServlet {
             
             if (jsonResponse.has("success") && jsonResponse.get("success").getAsBoolean()) {
                 JsonArray products = jsonResponse.getAsJsonArray("products");
-                request.setAttribute("products", products);
                 request.setAttribute("productsJson", products.toString());
             } else {
                 request.setAttribute("error", "Failed to load products from inventory service");
-                request.setAttribute("products", new JsonArray());
                 request.setAttribute("productsJson", "[]");
             }
             
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             request.setAttribute("error", "Service communication interrupted");
-            request.setAttribute("products", new JsonArray());
             request.setAttribute("productsJson", "[]");
         } catch (Exception e) {
             request.setAttribute("error", "Unable to connect to Inventory Service: " + e.getMessage());
-            request.setAttribute("products", new JsonArray());
             request.setAttribute("productsJson", "[]");
         }
         

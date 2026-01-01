@@ -25,187 +25,133 @@ public class OrderServlet extends HttpServlet {
         response.sendRedirect(request.getContextPath() + "/checkout");
     }
     
-    @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
-        
         try {
-            
             String customerId = request.getParameter("customer_id");
             String[] productIds = request.getParameterValues("product_id");
             String[] quantities = request.getParameterValues("quantity");
-            String totalAmount = request.getParameter("total_amount");
             String region = request.getParameter("region");
-            
-            
-            if (customerId == null || customerId.isEmpty()) {
-                request.setAttribute("error", "Please select a customer");
-                request.getRequestDispatcher("/checkout").forward(request, response);
+
+            // Validation
+            if (customerId == null || customerId.isEmpty() || productIds == null || productIds.length == 0) {
+                forwardError(request, response, "Please select a customer and at least one product");
                 return;
             }
-            
-            if (productIds == null || productIds.length == 0) {
-                request.setAttribute("error", "Please select at least one product");
-                request.getRequestDispatcher("/checkout").forward(request, response);
-                return;
-            }
-            
-            
+
+            // Build products array
             JsonArray products = new JsonArray();
             for (int i = 0; i < productIds.length; i++) {
-                if (productIds[i] != null && !productIds[i].isEmpty()) {
-                    int qty = 1;
-                    if (quantities != null && i < quantities.length && quantities[i] != null) {
-                        try {
-                            qty = Integer.parseInt(quantities[i]);
-                        } catch (NumberFormatException e) {
-                            qty = 1;
-                        }
-                    }
-                    
-                    if (qty > 0) {
-                        JsonObject product = new JsonObject();
-                        product.addProperty("product_id", Integer.parseInt(productIds[i]));
-                        product.addProperty("quantity", qty);
-                        products.add(product);
-                    }
+                if (productIds[i] == null || productIds[i].isEmpty()) continue;
+                int qty = (quantities != null && i < quantities.length) ? parseIntOrDefault(quantities[i], 1) : 1;
+                if (qty > 0) {
+                    JsonObject p = new JsonObject();
+                    p.addProperty("product_id", Integer.parseInt(productIds[i]));
+                    p.addProperty("quantity", qty);
+                    products.add(p);
                 }
             }
-            
+
             if (products.isEmpty()) {
-                request.setAttribute("error", "Please add products to your cart");
-                request.getRequestDispatcher("/checkout").forward(request, response);
+                forwardError(request, response, "Please add products to your cart");
                 return;
             }
-            
-            
-            JsonObject pricingRequest = new JsonObject();
-            pricingRequest.add("products", products);
-            pricingRequest.addProperty("region", region != null ? region : "Egypt");
-            
-            String pricingResponseStr = HttpUtil.sendPost(
-                    HttpUtil.PRICING_SERVICE + "/api/pricing/calculate",
-                    gson.toJson(pricingRequest)
-            );
-            
-            JsonObject pricingResponse = gson.fromJson(pricingResponseStr, JsonObject.class);
-            
-            double finalTotal = 0;
-            if (pricingResponse.has("success") && pricingResponse.get("success").getAsBoolean()) {
-                finalTotal = pricingResponse.get("final_total").getAsDouble();
-            } else if (totalAmount != null && !totalAmount.isEmpty()) {
-                finalTotal = Double.parseDouble(totalAmount);
+
+            // Use the total calculated on checkout page (already called pricing API there)
+            double finalTotal = parseDoubleOrDefault(request.getParameter("total_amount"), 0);
+            if (finalTotal <= 0) {
+                forwardError(request, response, "Invalid order total");
+                return;
             }
-            
-            
-            JsonObject orderRequest = new JsonObject();
-            orderRequest.addProperty("customer_id", Integer.parseInt(customerId));
-            orderRequest.add("products", products);
-            orderRequest.addProperty("total_amount", finalTotal);
-            
-            
-            String orderResponseStr = HttpUtil.sendPost(
-                    HttpUtil.ORDER_SERVICE + "/api/orders/create",
-                    gson.toJson(orderRequest)
+
+            // Create order
+            JsonObject orderReq = new JsonObject();
+            orderReq.addProperty("customer_id", Integer.parseInt(customerId));
+            orderReq.add("products", products);
+            orderReq.addProperty("total_amount", finalTotal);
+            JsonObject orderRes = gson.fromJson(
+                HttpUtil.sendPost(HttpUtil.ORDER_SERVICE + "/api/orders/create", gson.toJson(orderReq)), 
+                JsonObject.class
             );
-            
-            JsonObject orderResponse = gson.fromJson(orderResponseStr, JsonObject.class);
-            
-            if (orderResponse.has("success") && orderResponse.get("success").getAsBoolean()) {
-                int orderId = orderResponse.get("order_id").getAsInt();
-                
-                
-                for (int i = 0; i < products.size(); i++) {
-                    JsonObject product = products.get(i).getAsJsonObject();
-                    int productId = product.get("product_id").getAsInt();
-                    int qty = product.get("quantity").getAsInt();
-                    
-                    try {
-                        JsonObject inventoryUpdate = new JsonObject();
-                        inventoryUpdate.addProperty("product_id", productId);
-                        inventoryUpdate.addProperty("quantity", qty);
-                        
-                        HttpUtil.sendPut(
-                                HttpUtil.INVENTORY_SERVICE + "/api/inventory/update",
-                                gson.toJson(inventoryUpdate)
-                        );
-                    } catch (Exception e) {
-                        
-                    }
-                }
-                JsonObject notificationRequest = new JsonObject();
-                notificationRequest.addProperty("order_id", orderId);
-                notificationRequest.addProperty("notification_type", "order_confirmation");
-                
-                String notificationResponseStr = "";
-                boolean notificationSent = false;
+
+            if (!orderRes.has("success") || !orderRes.get("success").getAsBoolean()) {
+                forwardError(request, response, orderRes.has("error") ? orderRes.get("error").getAsString() : "Failed to create order");
+                return;
+            }
+
+            int orderId = orderRes.get("order_id").getAsInt();
+
+            // Update inventory (fire-and-forget)
+            for (var el : products) {
+                JsonObject p = el.getAsJsonObject();
                 try {
-                    notificationResponseStr = HttpUtil.sendPost(
-                            HttpUtil.NOTIFICATION_SERVICE + "/api/notifications/send",
-                            gson.toJson(notificationRequest)
-                    );
-                    JsonObject notificationResponse = gson.fromJson(notificationResponseStr, JsonObject.class);
-                    notificationSent = notificationResponse.has("success") && 
-                            notificationResponse.get("success").getAsBoolean();
-                } catch (Exception e) {
-                    
-                    notificationSent = false;
-                }
-                
-                
-                int pointsToAdd = (int) Math.floor(finalTotal / 10);
-                if (pointsToAdd > 0) {
-                    try {
-                        JsonObject loyaltyRequest = new JsonObject();
-                        loyaltyRequest.addProperty("points", pointsToAdd);
-                        
-                        HttpUtil.sendPut(
-                                HttpUtil.CUSTOMER_SERVICE + "/api/customers/" + customerId + "/loyalty",
-                                gson.toJson(loyaltyRequest)
-                        );
-                    } catch (Exception e) {
-                        
-                        
-                    }
-                }
-                
-                
-                String customerResponseStr = HttpUtil.sendGet(
-                        HttpUtil.CUSTOMER_SERVICE + "/api/customers/" + customerId
-                );
-                JsonObject customerResponse = gson.fromJson(customerResponseStr, JsonObject.class);
-                
-                
-                request.setAttribute("orderId", orderId);
-                request.setAttribute("orderResponse", orderResponse.toString());
-                request.setAttribute("pricingResponse", pricingResponse.toString());
-                request.setAttribute("customerResponse", customerResponse.toString());
-                request.setAttribute("notificationSent", notificationSent);
-                request.setAttribute("customerName", 
-                        customerResponse.has("name") ? customerResponse.get("name").getAsString() : "Unknown");
-                request.setAttribute("customerEmail", 
-                        customerResponse.has("email") ? customerResponse.get("email").getAsString() : "");
-                request.setAttribute("finalTotal", finalTotal);
-                request.setAttribute("timestamp", orderResponse.has("timestamp") ? 
-                        orderResponse.get("timestamp").getAsString() : "");
-                
-                
-                request.getRequestDispatcher("/confirmation.jsp").forward(request, response);
-                
-            } else {
-                String errorMsg = orderResponse.has("error") ? 
-                        orderResponse.get("error").getAsString() : "Failed to create order";
-                request.setAttribute("error", errorMsg);
-                request.getRequestDispatcher("/checkout").forward(request, response);
+                    JsonObject inv = new JsonObject();
+                    inv.addProperty("product_id", p.get("product_id").getAsInt());
+                    inv.addProperty("quantity", p.get("quantity").getAsInt());
+                    HttpUtil.sendPut(HttpUtil.INVENTORY_SERVICE + "/api/inventory/update", gson.toJson(inv));
+                } catch (Exception ignored) {}
             }
-            
+
+            boolean notificationSent = false;
+            try {
+                JsonObject notifReq = new JsonObject();
+                notifReq.addProperty("order_id", orderId);
+                notifReq.addProperty("notification_type", "order_confirmation");
+                String notifResponse = HttpUtil.sendPost(HttpUtil.NOTIFICATION_SERVICE + "/api/notifications/send", gson.toJson(notifReq));
+                
+                JsonObject notifRes = gson.fromJson(notifResponse, JsonObject.class);
+                notificationSent = notifRes != null && notifRes.has("success") && notifRes.get("success").getAsBoolean();
+                
+                if (!notificationSent && notifRes != null && notifRes.has("error")) {
+                    System.err.println("[OrderServlet] Notification error: " + notifRes.get("error").getAsString());
+                }
+            } catch (Exception e) {
+                System.err.println("[OrderServlet] Notification exception: " + e.getMessage());
+            }
+
+            int points = (int) (finalTotal / 10);
+            if (points > 0) {
+                try {
+                    JsonObject loyaltyReq = new JsonObject();
+                    loyaltyReq.addProperty("points", points);
+                    HttpUtil.sendPut(HttpUtil.CUSTOMER_SERVICE + "/api/customers/" + customerId + "/loyalty", gson.toJson(loyaltyReq));
+                } catch (Exception ignored) {}
+            }
+
+            String customerName = request.getParameter("customer_name");
+            String customerEmail = request.getParameter("customer_email");
+            String orderItemsJson = request.getParameter("order_items_json");
+            if (customerName == null || customerName.isEmpty()) customerName = "Unknown";
+            if (customerEmail == null) customerEmail = "";
+            if (orderItemsJson == null || orderItemsJson.isEmpty()) orderItemsJson = "{}";
+
+            request.setAttribute("orderId", orderId);
+            request.setAttribute("customerName", customerName);
+            request.setAttribute("customerEmail", customerEmail);
+            request.setAttribute("finalTotal", finalTotal);
+            request.setAttribute("notificationSent", notificationSent);
+            request.setAttribute("pricingResponse", orderItemsJson);
+            request.getRequestDispatcher("/confirmation.jsp").forward(request, response);
+
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            request.setAttribute("error", "Service communication interrupted");
-            request.getRequestDispatcher("/checkout").forward(request, response);
+            forwardError(request, response, "Service communication interrupted");
         } catch (Exception e) {
-            request.setAttribute("error", "Error processing order: " + e.getMessage());
-            request.getRequestDispatcher("/checkout").forward(request, response);
+            forwardError(request, response, "Error processing order: " + e.getMessage());
         }
+    }
+
+    private void forwardError(HttpServletRequest request, HttpServletResponse response, String error) 
+            throws ServletException, IOException {
+        request.setAttribute("error", error);
+        request.getRequestDispatcher("/checkout").forward(request, response);
+    }
+
+    private int parseIntOrDefault(String s, int def) {
+        try { return Integer.parseInt(s); } catch (Exception e) { return def; }
+    }
+
+    private double parseDoubleOrDefault(String s, double def) {
+        try { return Double.parseDouble(s); } catch (Exception e) { return def; }
     }
 }

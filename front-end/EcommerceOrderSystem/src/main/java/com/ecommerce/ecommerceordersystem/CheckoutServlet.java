@@ -32,20 +32,16 @@ public class CheckoutServlet extends HttpServlet {
             
             if (jsonResponse.has("success") && jsonResponse.get("success").getAsBoolean()) {
                 JsonArray products = jsonResponse.getAsJsonArray("products");
-                request.setAttribute("products", products);
                 request.setAttribute("productsJson", products.toString());
             } else {
-                request.setAttribute("products", new JsonArray());
                 request.setAttribute("productsJson", "[]");
             }
             
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            request.setAttribute("products", new JsonArray());
             request.setAttribute("productsJson", "[]");
         } catch (Exception e) {
             request.setAttribute("error", "Unable to connect to Inventory Service: " + e.getMessage());
-            request.setAttribute("products", new JsonArray());
             request.setAttribute("productsJson", "[]");
         }
         
@@ -72,11 +68,9 @@ public class CheckoutServlet extends HttpServlet {
                 }
             }
             
-            request.setAttribute("customers", customers);
             request.setAttribute("customersJson", customers.toString());
             
         } catch (Exception e) {
-            request.setAttribute("customers", new JsonArray());
             request.setAttribute("customersJson", "[]");
         }
         
