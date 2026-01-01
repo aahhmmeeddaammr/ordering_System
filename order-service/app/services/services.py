@@ -14,7 +14,42 @@ def create_order(customer_id, products, total_amount):
         if not cursor.fetchone():
             return {"success": False, "error": f"Customer {customer_id} not found"}
         
+        inventory_url = os.getenv("INVENTORY_URL", "http://localhost:5002")
+        product_info = {} 
         
+        for product in products:
+            product_id = product.get("product_id")
+            quantity = product.get("quantity")
+            
+            try:
+                response = requests.get(
+                    f"{inventory_url}/api/inventory/check/{product_id}",
+                    timeout=5
+                )
+                
+                if response.ok:
+                    inventory_data = response.json()
+                    if inventory_data.get("success"):
+                        quantity_available = inventory_data.get("quantity_available", 0)
+                        
+                        if quantity_available < quantity:
+                            return {
+                                "success": False,
+                                "error": f"Insufficient stock for product {product_id} ({inventory_data.get('product_name', 'Unknown')}). Available: {quantity_available}, Requested: {quantity}"
+                            }
+                        
+                        product_info[product_id] = {
+                            "unit_price": inventory_data.get("unit_price", 0),
+                            "product_name": inventory_data.get("product_name", f"Product #{product_id}")
+                        }
+                    else:
+                        return {"success": False, "error": f"Product {product_id} not found in inventory"}
+                else:
+                    return {"success": False, "error": f"Failed to check inventory for product {product_id}"}
+            except Exception as e:
+                return {"success": False, "error": f"Could not verify inventory for product {product_id}: {str(e)}"}
+        
+        # All products have sufficient stock, proceed with order creation
         cursor.execute(
             "INSERT INTO orders (customer_id, total_amount, status) VALUES (%s, %s, %s)",
             (customer_id, total_amount, "pending")
@@ -27,22 +62,7 @@ def create_order(customer_id, products, total_amount):
         for product in products:
             product_id = product.get("product_id")
             quantity = product.get("quantity")
-            
-            
-            try:
-                inventory_url = os.getenv("INVENTORY_URL", "http://localhost:5002")
-                response = requests.get(
-                    f"{inventory_url}/api/inventory/check/{product_id}",
-                    timeout=5
-                )
-                
-                if response.ok:
-                    inventory_data = response.json()
-                    unit_price = inventory_data.get("unit_price", 0)
-                else:
-                    unit_price = 0
-            except:
-                unit_price = 0
+            unit_price = product_info.get(product_id, {}).get("unit_price", 0)
             
             
             cursor.execute(
